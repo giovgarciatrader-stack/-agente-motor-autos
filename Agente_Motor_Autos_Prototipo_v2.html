@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente Motor Autos — Prototipo</title>
+<style>
+:root{--navy:#123b5d;--blue:#1d6fa5;--bg:#f4f7fa;--text:#1d2935;--muted:#667788;--ok:#16794c;--warn:#a66a00;--bad:#b42318}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#123b5d,#1d6fa5);color:white;padding:28px 20px}
+.wrap{max-width:900px;margin:auto}h1{margin:0 0 7px;font-size:28px}header p{margin:0;opacity:.9}
+.card{background:white;border-radius:14px;padding:24px;margin:22px auto;box-shadow:0 4px 18px #123b5d14}
+h2{margin-top:0;color:var(--navy)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{font-weight:bold;font-size:14px;display:block;margin-bottom:6px}
+input,select{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:8px;font-size:15px;background:white}
+button{border:0;border-radius:9px;padding:13px 20px;font-size:15px;font-weight:bold;cursor:pointer}
+.primary{background:var(--blue);color:white}.secondary{background:#e9eef3;color:var(--navy)}
+.actions{display:flex;gap:10px;margin-top:20px}.result{display:none}.status{padding:12px;border-radius:8px;font-weight:bold;margin-bottom:18px}
+.ok{background:#e9f7ef;color:var(--ok)}.warn{background:#fff4dc;color:var(--warn)}.bad{background:#fdecea;color:var(--bad)}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{background:#f6f8fa;border-radius:9px;padding:14px}.box small{display:block;color:var(--muted);margin-bottom:5px}.box strong{font-size:18px}
+.disclaimer{font-size:12px;color:var(--muted);margin-top:15px}
+@media(max-width:650px){.grid,.summary{grid-template-columns:1fr}.actions{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>AGENTE MOTOR AUTOS</h1><p>Prototipo de cotización inteligente — tarifas ficticias</p></div></header>
+
+<main class="wrap">
+<section class="card">
+<h2>Nueva cotización</h2>
+<div class="grid">
+<div><label>Intermediario</label><input id="intermediario" placeholder="Nombre del intermediario"></div>
+
+<div><label>Placa</label><input id="placa" maxlength="6" placeholder="ABC123"></div>
+<div><label>Tipo de vehículo</label><select id="tipo"><option>Automóvil</option><option>Camioneta</option><option>Campero</option><option>Motocicleta</option></select></div>
+<div><label>Marca</label><input id="marca" placeholder="Ej. Mazda"></div>
+<div><label>Línea</label><input id="linea" placeholder="Ej. CX-5"></div>
+<div><label>Modelo</label><input id="modelo" type="number" min="1980" max="2030" value="2024"></div>
+<div><label>Valor comercial ($)</label><input id="valor" type="number" min="0" value="125000000"></div>
+<div><label>Ciudad</label><input id="ciudad" value="Bogotá"></div>
+<div><label>Uso</label><select id="uso"><option>Particular</option><option>Comercial</option></select></div>
+<div><label>¿Vehículo eléctrico?</label><select id="electrico"><option>No</option><option>Sí</option></select></div>
+<div><label>¿Beneficiario oneroso persona natural?</label><select id="beneficiario"><option>No</option><option>Sí</option></select></div>
+<div><label>Siniestros últimos 12 meses</label><select id="siniestros"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+
+</div>
+<div class="actions"><button class="primary" onclick="cotizar()">Cotizar</button><button class="secondary" onclick="limpiar()">Limpiar</button></div>
+</section>
+
+<section class="card result" id="resultado">
+<h2>Resultado de la cotización</h2>
+<div id="estado" class="status"></div>
+<div class="summary">
+<div class="box"><small>Producto</small><strong id="rproducto"></strong></div>
+<div class="box"><small>Prima estimada</small><strong id="rprima"></strong></div>
+<div class="box"><small>Tasa base</small><strong id="rtasa"></strong></div>
+<div class="box"><small>Recargo por siniestros</small><strong id="rrecargo"></strong></div>
+<div class="box"><small>Vehículo</small><strong id="rvehiculo"></strong></div>
+
+</div>
+<p id="motivo" class="disclaimer"></p>
+<div class="actions"><button class="primary" onclick="window.print()">Imprimir / guardar PDF</button></div>
+<p class="disclaimer">PROTOTIPO: las tarifas y reglas son ficticias y no representan tarifas reales de Aseguradora Solidaria de Colombia.</p>
+</section>
+</main>
+
+<script>
+const tasas={"Automóvil":0.028,"Camioneta":0.030,"Campero":0.032,"Motocicleta":0.055};
+function money(n){return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n)}
+function cotizar(){
+ const tipo=document.getElementById("tipo").value, valor=Number(document.getElementById("valor").value)||0;
+ const modelo=Number(document.getElementById("modelo").value)||0, electrico=document.getElementById("electrico").value;
+ const beneficiario=document.getElementById("beneficiario").value, sin=parseInt(document.getElementById("siniestros").value);
+ let estado="COTIZABLE", clase="ok", motivo="Riesgo dentro de las reglas del prototipo.";
+ if(electrico==="Sí" || beneficiario==="Sí"){estado="RECHAZADO";clase="bad";motivo=electrico==="Sí"?"Motivo: vehículo eléctrico fuera del apetito del prototipo.":"Motivo: beneficiario oneroso persona natural fuera del apetito del prototipo."}
+ else if(modelo<2010){estado="REQUIERE REVISIÓN";clase="warn";motivo="Motivo: vehículo antiguo; requiere revisión técnica antes de cotizar."}
+ let recargo=sin===1?.15:sin===2?.30:sin>=3?.50:0;
+ let tasa=tasas[tipo]||0, prima=valor*tasa*(1+recargo);
+ if(estado==="RECHAZADO") prima=0;
+ document.getElementById("resultado").style.display="block";
+ const e=document.getElementById("estado");e.className="status "+clase;e.textContent=estado;
+ document.getElementById("rproducto").textContent="Todo Riesgo";
+ document.getElementById("rprima").textContent=prima?money(prima):"No aplica";
+ document.getElementById("rtasa").textContent=(tasa*100).toFixed(1)+"%";
+ document.getElementById("rrecargo").textContent=(recargo*100).toFixed(0)+"%";
+ document.getElementById("rvehiculo").textContent=`${document.getElementById("marca").value||"—"} ${document.getElementById("linea").value||""} ${modelo}`;
+ document.getElementById("motivo").textContent=motivo;
+ window.scrollTo({top:document.getElementById("resultado").offsetTop-15,behavior:"smooth"});
+}
+function limpiar(){document.querySelectorAll("input").forEach((x,i)=>{if(x.id!=="modelo"&&x.id!=="valor"&&x.id!=="ciudad")x.value=""});document.getElementById("resultado").style.display="none"}
+</script>
+</body></html>
